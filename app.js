@@ -9,11 +9,6 @@ function get_parameters(req) {
   return url_parts.query;
 }
 
-function full_hostname(req) {
-  var url_parts = url.parse(req.url, true);
-  return (url_parts.protocol + '//' + url_parts.host);
-}
-
 function handleRequest(req, res) {
   var query = get_parameters(req);
   var content = 'nuthing';
@@ -38,7 +33,7 @@ function handleRequest(req, res) {
     res.writeHead(200, { 'Content-Type': 'application/json'});
     res.write(
         JSON.stringify(
-          { 'error': 'Please pass a URL and a jQuery compatible selector via GET parameters, thusly: ' + full_hostname(req) + '/?url=http%3A%2F%2Fthoughtbot.com%2F&css=h2' })
+          { 'error': 'Please pass a URL and a jQuery compatible selector via GET parameters, thusly: ' + process.env.HOST + '/?url=http%3A%2F%2Fthoughtbot.com%2F&css=h2' })
         );
     res.end();
   }
@@ -49,4 +44,3 @@ server.on('request', handleRequest);
 var port = process.env.PORT || 8080;
 
 server.listen(port);
-
