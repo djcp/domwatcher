@@ -1,6 +1,7 @@
 var http = require('http');
 var url = require('url');
 var $ = require('jquery').create();
+var redis = require('redis-url').connect(process.env.REDIS_URL);
 
 var server = http.createServer();
 
@@ -9,25 +10,39 @@ function get_parameters(req) {
   return url_parts.query;
 }
 
+function get_content(url, callback) {
+  var data = '';
+  redis.get(url, function(err, reply){
+    if(reply == null){
+      http.get(url, function(response){
+        response.on('data', function(chunk){
+          data += chunk
+        });
+        response.on('end', function(){
+          console.log('requested ' + url);
+          redis.set(url, data, 'NX', 'EX', 600, function(err, reply) {});
+          callback(data);
+        });
+      });
+    } else {
+      callback(reply);
+    }
+  });
+}
+
 function handleRequest(req, res) {
   var query = get_parameters(req);
   var content = 'nuthing';
-  var data = '';
 
   if( ("url" in query) && ("css" in query) ){
-    http.get(query['url'], function(response){
-      response.on('data', function(chunk){
-        data += chunk
+    get_content(query['url'], function(data){
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      var results = [];
+      $.each($(data).find(query['css']), function(index, element){
+        results.push({ 'result': $(element).text() });
       });
-      response.on('end', function(){
-        res.writeHead(200, { 'Content-Type': 'application/json'});
-        var results = [];
-        $.each($(data).find(query['css']), function(index, element){
-          results.push({ 'result': $(element).text() });
-        });
-        res.write(JSON.stringify(results));
-        res.end();
-      });
+      res.write(JSON.stringify(results));
+      res.end();
     });
   } else {
     res.writeHead(200, { 'Content-Type': 'application/json'});

@@ -6,6 +6,7 @@
     "start": "node app.js"
   },
   "dependencies": {
-    "jquery": "1.7.*"
+    "jquery": "1.7.*",
+    "redis-url": "0.2.*"
   }
 }
